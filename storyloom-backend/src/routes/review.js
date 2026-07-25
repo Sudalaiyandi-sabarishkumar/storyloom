@@ -1,0 +1,32 @@
+import { Router } from 'express';
+import { asyncHandler } from '../middleware/errorHandler.js';
+import * as projectRepo from '../db/repositories/projectRepo.js';
+import * as reviewAgent from '../agents/reviewAgent.js';
+
+const router = Router({ mergeParams: true });
+
+// GET /api/projects/:id/feedback?refresh=true
+// Matches the frontend seam: getFeedback(storyId)
+router.get('/feedback', asyncHandler(async (req, res) => {
+  const projectId = req.params.id;
+  const refresh = req.query.refresh === 'true';
+  const storyContext = refresh ? await projectRepo.buildStoryContext(projectId) : null;
+  const feedback = await reviewAgent.getFeedback(projectId, storyContext, { useCache: !refresh });
+  res.json(feedback);
+}));
+
+// POST /api/projects/:id/impact-check  { entityName }
+// Matches the frontend seam: checkImpact(entityName, storyId)
+router.post('/impact-check', asyncHandler(async (req, res) => {
+  const projectId = req.params.id;
+  const { entityName } = req.body || {};
+  if (!entityName) return res.status(400).json({ error: 'entityName is required' });
+
+  const storyContext = await projectRepo.buildStoryContext(projectId);
+  if (!storyContext) return res.status(404).json({ error: 'Project not found' });
+
+  const result = await reviewAgent.checkImpact(entityName, projectId, storyContext);
+  res.json(result);
+}));
+
+export default router;
