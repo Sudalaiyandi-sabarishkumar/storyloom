@@ -1,0 +1,86 @@
+/* ---------- Top nav / persona switcher ---------- */
+.topbar{
+  position:sticky;top:0;z-index:50;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 28px;
+  background:linear-gradient(180deg, rgba(18,14,10,.92), rgba(18,14,10,.75));
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--c-border);
+  transition:background .5s ease, border-color .5s ease;
+}
+body.director-mode .topbar{
+  background:linear-gradient(180deg, rgba(10,9,9,.94), rgba(10,9,9,.78));
+  border-bottom:1px solid var(--d-border2);
+}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--font-serif);font-size:20px;font-weight:600;letter-spacing:.2px;}
+.brand .mark{
+  width:28px;height:28px;border-radius:7px;
+  background:conic-gradient(from 220deg, var(--c-amber), #7a4a1c, var(--c-amber));
+  box-shadow:0 0 18px var(--c-amber-glow);
+  transition:background .5s ease, box-shadow .5s ease;
+}
+body.director-mode .brand .mark{
+  background:conic-gradient(from 220deg, var(--d-red), #5c0d16, var(--d-red));
+  box-shadow:0 0 18px var(--d-red-glow);
+}
+.persona-switch{
+  display:flex;background:var(--c-surface);border:1px solid var(--c-border);
+  border-radius:999px;padding:4px;gap:2px;
+  transition:background .5s ease,border-color .5s ease;
+}
+body.director-mode .persona-switch{background:var(--d-surface);border-color:var(--d-border2);}
+.persona-switch button{
+  padding:9px 18px;border-radius:999px;font-size:13px;font-weight:600;
+  color:var(--c-text-dim);transition:all .25s ease;letter-spacing:.2px;
+}
+body.director-mode .persona-switch button{color:var(--d-text-dim);}
+.persona-switch button.active{
+  background:var(--c-amber);color:#1B1611;
+  box-shadow:0 0 20px var(--c-amber-glow);
+}
+body.director-mode .persona-switch button.active{
+  background:var(--d-red);color:#F5EDEE;
+  box-shadow:0 0 20px var(--d-red-glow);
+}
+.topbar-right{display:flex;align-items:center;gap:16px;}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--c-surface2);border:1px solid var(--c-border);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--c-amber);}
+body.director-mode .avatar{border-color:var(--d-border2);color:var(--d-red);background:var(--d-surface2);}
+
+/* ---------- Section tabs ---------- */
+.tabbar{
+  display:flex;gap:6px;padding:14px 28px;
+  border-bottom:1px solid var(--c-border);
+  overflow-x:auto;
+  transition:border-color .5s ease;
+}
+body.director-mode .tabbar{border-color:var(--d-border2);}
+.tabbar button{
+  padding:9px 16px;border-radius:9px;font-size:13px;font-weight:600;
+  color:var(--c-text-dim);white-space:nowrap;transition:all .2s ease;
+  border:1px solid transparent;
+}
+.tabbar button:hover{color:var(--c-text);background:var(--c-surface);}
+body.director-mode .tabbar button:hover{color:var(--d-text);background:var(--d-surface);}
+.tabbar button.active{color:var(--c-amber);background:var(--c-surface2);border-color:var(--c-border);}
+body.director-mode .tabbar button.active{color:var(--d-red-soft);background:var(--d-surface2);border-color:var(--d-border2);}
+
+.view{display:none;padding:28px;max-width:1400px;margin:0 auto;animation:fadeUp .4s ease;}
+.view.active{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+.page-head{margin-bottom:22px;}
+.eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--c-amber);font-weight:600;}
+body.director-mode .eyebrow{color:var(--d-red-soft);}
+.page-title{font-family:var(--font-serif);font-size:30px;font-weight:600;margin-top:6px;}
+.page-sub{color:var(--c-text-dim);font-size:14px;margin-top:6px;max-width:640px;line-height:1.5;}
+body.director-mode .page-sub{color:var(--d-text-dim);}
+
+.card{
+  background:var(--c-surface);border:1px solid var(--c-border);border-radius:16px;
+  transition:background .5s ease,border-color .5s ease, box-shadow .25s ease, transform .25s ease;
+}
+body.director-mode .card{background:var(--d-surface);border-color:var(--d-border2);}
+
+/* persona root containers hidden/shown */
+#creator-root,#director-root{display:none;}
+#creator-root.active,#director-root.active{display:block;}
