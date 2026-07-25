@@ -36,6 +36,7 @@ export async function getRankings({ forceRecompute = false } = {}) {
     }
 
     results.push({
+      id: p.id,
       title: row.title,
       genres: row.genres,
       score: row.score,

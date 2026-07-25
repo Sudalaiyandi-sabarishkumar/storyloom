@@ -14,7 +14,7 @@ const characterSchema = z.object({
 
 const createProjectSchema = z.object({
   title: z.string().min(1),
-  genres: z.array(z.string()).default([]),
+  genres: z.array(z.string()).min(1, 'At least one genre is required'),
   themes: z.array(z.string()).default([]),
   background: z.string().optional().default(''),
   coreStory: z.string().optional().default(''),

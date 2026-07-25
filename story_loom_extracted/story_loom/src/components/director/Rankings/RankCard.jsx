@@ -1,4 +1,4 @@
-export default function RankCard({ project, rank, onOpen }) {
+export default function RankCard({ project, rank, onOpen, onDownload, downloading }) {
   const bars = project.spark.map((v, i) => <div key={i} style={{ height: `${v}%` }}></div>);
   const dashArray = `${project.score * 1.885} 188.5`;
 
@@ -27,6 +27,14 @@ export default function RankCard({ project, rank, onOpen }) {
         </div>
         <div className="spark">{bars}</div>
         <div className="fit-badge"><span>Audience fit</span><span className="fit-pct">{project.fit}%</span></div>
+        <button
+          type="button"
+          className="rank-download-btn"
+          onClick={(e) => { e.stopPropagation(); onDownload(project); }}
+          disabled={downloading}
+        >
+          {downloading ? 'Downloading…' : '⬇ Download'}
+        </button>
       </div>
     </div>
   );

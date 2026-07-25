@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { listProjects } from '../../../services/projectsService.js';
+import { listProjects, getProjectDetail } from '../../../services/projectsService.js';
+import { downloadStoryDocument } from '../../../utils/exportStory.js';
 
 const STATUS_LABEL = {
   draft: 'Draft',
@@ -8,10 +9,12 @@ const STATUS_LABEL = {
   greenlit: 'Greenlit',
 };
 
-export default function StoriesListView({ active, onOpenStory, onNewProject }) {
+export default function StoriesListView({ active, onOpenStory, onNewProject, openingStoryId, openError }) {
   const [stories, setStories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [downloadingId, setDownloadingId] = useState(null);
+  const [downloadError, setDownloadError] = useState('');
 
   useEffect(() => {
     if (!active) return;
@@ -33,6 +36,22 @@ export default function StoriesListView({ active, onOpenStory, onNewProject }) {
     return () => { cancelled = true; };
   }, [active]);
 
+  async function handleDownload(e, story) {
+    e.stopPropagation();
+    setDownloadingId(story.id);
+    setDownloadError('');
+    try {
+      const detail = await getProjectDetail(story.id);
+      downloadStoryDocument(detail);
+    } catch (err) {
+      setDownloadError(err.message || 'Could not download that story — try again.');
+    } finally {
+      setDownloadingId(null);
+    }
+  }
+
+  const busy = Boolean(openingStoryId);
+
   return (
     <div id="c-stories" className={`view ${active ? 'active' : ''}`}>
       <div className="page-head">
@@ -42,32 +61,53 @@ export default function StoriesListView({ active, onOpenStory, onNewProject }) {
       </div>
 
       {error && <div className="section-hint" style={{ color: 'var(--c-danger, #D9534F)' }}>{error}</div>}
+      {openError && <div className="section-hint" style={{ color: 'var(--c-danger, #D9534F)' }}>{openError}</div>}
+      {downloadError && <div className="section-hint" style={{ color: 'var(--c-danger, #D9534F)' }}>{downloadError}</div>}
 
       {loading ? (
         <div className="card drawer-empty">Loading your stories…</div>
       ) : (
         <div className="story-grid">
-          <button type="button" className="card story-card new-story-card" onClick={onNewProject}>
+          <button type="button" className="card story-card new-story-card" onClick={onNewProject} disabled={busy}>
             <div className="story-card-plus">+</div>
             <div className="story-card-title">New project</div>
           </button>
 
-          {stories.map((story) => (
-            <button
-              type="button"
-              className="card story-card"
-              key={story.id}
-              onClick={() => onOpenStory(story)}
-            >
-              <div className={`impact-badge status-badge status-${story.status}`}>
-                {STATUS_LABEL[story.status] || story.status}
+          {stories.map((story) => {
+            const isOpening = openingStoryId === story.id;
+            const isDownloading = downloadingId === story.id;
+            return (
+              <div
+                role="button"
+                tabIndex={0}
+                className={`card story-card ${busy ? 'story-card-disabled' : ''}`}
+                key={story.id}
+                onClick={() => !busy && onOpenStory(story)}
+                onKeyDown={(e) => { if (!busy && (e.key === 'Enter' || e.key === ' ')) onOpenStory(story); }}
+              >
+                {isOpening && (
+                  <div className="story-card-loading">
+                    <span className="spinner"></span> Opening…
+                  </div>
+                )}
+                <div className={`impact-badge status-badge status-${story.status}`}>
+                  {STATUS_LABEL[story.status] || story.status}
+                </div>
+                <div className="story-card-title">{story.title || 'Untitled project'}</div>
+                {Array.isArray(story.genres) && story.genres.length > 0 && (
+                  <div className="story-card-genres">{story.genres.join(' · ')}</div>
+                )}
+                <button
+                  type="button"
+                  className="ghost-btn story-download-btn"
+                  onClick={(e) => handleDownload(e, story)}
+                  disabled={isDownloading}
+                >
+                  {isDownloading ? 'Downloading…' : '⬇ Download'}
+                </button>
               </div>
-              <div className="story-card-title">{story.title || 'Untitled project'}</div>
-              {Array.isArray(story.genres) && story.genres.length > 0 && (
-                <div className="story-card-genres">{story.genres.join(' · ')}</div>
-              )}
-            </button>
-          ))}
+            );
+          })}
 
           {stories.length === 0 && (
             <div className="card drawer-empty story-empty">No stories yet — start your first one.</div>

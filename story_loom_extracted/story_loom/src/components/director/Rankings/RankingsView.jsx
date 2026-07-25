@@ -1,13 +1,30 @@
 import { useEffect, useState } from 'react';
 import RankCard from './RankCard.jsx';
 import { getRankings } from '../../../services/rankingAgent.js';
+import { getProjectDetail } from '../../../services/projectsService.js';
+import { downloadStoryDocument } from '../../../utils/exportStory.js';
 
 export default function RankingsView({ active, onOpenProject }) {
   const [projects, setProjects] = useState([]);
+  const [downloadingId, setDownloadingId] = useState(null);
+  const [downloadError, setDownloadError] = useState('');
 
   useEffect(() => {
     getRankings().then(setProjects);
   }, []);
+
+  async function handleDownload(project) {
+    setDownloadingId(project.id);
+    setDownloadError('');
+    try {
+      const detail = await getProjectDetail(project.id);
+      downloadStoryDocument(detail);
+    } catch (err) {
+      setDownloadError(err.message || 'Could not download that story — try again.');
+    } finally {
+      setDownloadingId(null);
+    }
+  }
 
   return (
     <div id="d-rank" className={`view ${active ? 'active' : ''}`}>
@@ -27,9 +44,17 @@ export default function RankingsView({ active, onOpenProject }) {
         </div>
         <div style={{ fontSize: '12px', color: 'var(--d-text-dim)' }}>{projects.length} projects · updated just now</div>
       </div>
+      {downloadError && <div className="section-hint" style={{ color: 'var(--c-danger, #D9534F)' }}>{downloadError}</div>}
       <div className="rank-grid">
         {projects.map((p, i) => (
-          <RankCard key={p.title} project={p} rank={i + 1} onOpen={onOpenProject} />
+          <RankCard
+            key={p.id || p.title}
+            project={p}
+            rank={i + 1}
+            onOpen={onOpenProject}
+            onDownload={handleDownload}
+            downloading={downloadingId === p.id}
+          />
         ))}
       </div>
     </div>

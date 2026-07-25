@@ -22,13 +22,23 @@ function CreatorRootInner({ isActive }) {
   // 'story' = editing (or, once submitted, viewing) an existing story.
   const [mode, setMode] = useState('list');
   const [activeView, setActiveView] = useState('c-new');
+  const [openingStoryId, setOpeningStoryId] = useState(null);
+  const [openError, setOpenError] = useState('');
   const { loadProject, startNewProject } = useProject();
 
   async function openStory(story) {
-    const detail = await getProjectDetail(story.id);
-    loadProject(detail);
-    setActiveView('c-editor');
-    setMode('story');
+    setOpeningStoryId(story.id);
+    setOpenError('');
+    try {
+      const detail = await getProjectDetail(story.id);
+      loadProject(detail);
+      setActiveView('c-editor');
+      setMode('story');
+    } catch (err) {
+      setOpenError(err.message || 'Could not open that story — try again.');
+    } finally {
+      setOpeningStoryId(null);
+    }
   }
 
   function newProject() {
@@ -46,7 +56,13 @@ function CreatorRootInner({ isActive }) {
   return (
     <div id="creator-root" className={isActive ? 'active' : ''}>
       {mode === 'list' ? (
-        <StoriesListView active onOpenStory={openStory} onNewProject={newProject} />
+        <StoriesListView
+          active
+          onOpenStory={openStory}
+          onNewProject={newProject}
+          openingStoryId={openingStoryId}
+          openError={openError}
+        />
       ) : (
         <>
           <button type="button" className="ghost-btn back-to-stories" onClick={backToList}>

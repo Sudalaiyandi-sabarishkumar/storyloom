@@ -6,34 +6,35 @@ import ConflictsSection from './ConflictsSection.jsx';
 import ResolutionSection from './ResolutionSection.jsx';
 import CopilotPanel from './CopilotPanel.jsx';
 import PlotOutput from './PlotOutput.jsx';
+import Toast from '../Toast.jsx';
 import { useTypingEffect } from '../../../hooks/useTypingEffect.js';
 import { generateOpeningPlot } from '../../../services/plotAgent.js';
 import { useProject } from '../../../context/ProjectContext.jsx';
-import {
-  DEFAULT_SELECTED_GENRES,
-  DEFAULT_THEMES,
-  INITIAL_CHARACTERS,
-  INITIAL_CONFLICTS,
-  DEFAULT_TIMELINE,
-  DEFAULT_CORE_STORY,
-  DEFAULT_BACKGROUND,
-  DEFAULT_RESOLUTION,
-} from '../../../data/mockData.js';
 
 export default function NewProjectView({ active }) {
-  const [selectedGenres, setSelectedGenres] = useState(DEFAULT_SELECTED_GENRES);
-  const [themes, setThemes] = useState(DEFAULT_THEMES);
-  const [characters, setCharacters] = useState(INITIAL_CHARACTERS);
-  const [conflicts, setConflicts] = useState(INITIAL_CONFLICTS);
-  const [timeline, setTimeline] = useState(DEFAULT_TIMELINE);
-  const [coreStory, setCoreStory] = useState(DEFAULT_CORE_STORY);
-  const [background, setBackground] = useState(DEFAULT_BACKGROUND);
-  const [resolution, setResolution] = useState(DEFAULT_RESOLUTION);
+  const [selectedGenres, setSelectedGenres] = useState([]);
+  const [themes, setThemes] = useState([]);
+  const [characters, setCharacters] = useState([]);
+  const [conflicts, setConflicts] = useState([]);
+  const [timeline, setTimeline] = useState('');
+  const [coreStory, setCoreStory] = useState('');
+  const [background, setBackground] = useState('');
+  const [resolution, setResolution] = useState('');
   const [showPlot, setShowPlot] = useState(false);
   const [genError, setGenError] = useState('');
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastShow, setToastShow] = useState(false);
+  const toastTimer = useRef(null);
   const { displayed, isTyping, start } = useTypingEffect(14);
   const plotRef = useRef(null);
   const { notifyPlotGenerated } = useProject();
+
+  function showToast(message) {
+    clearTimeout(toastTimer.current);
+    setToastMessage(message);
+    setToastShow(true);
+    toastTimer.current = setTimeout(() => setToastShow(false), 2600);
+  }
 
   function toggleGenre(genre) {
     setSelectedGenres((prev) =>
@@ -85,6 +86,10 @@ export default function NewProjectView({ active }) {
   }
 
   async function handleGeneratePlot() {
+    if (selectedGenres.length === 0) {
+      showToast('Pick at least one genre before generating.');
+      return;
+    }
     setShowPlot(true);
     setGenError('');
     plotRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -114,7 +119,7 @@ export default function NewProjectView({ active }) {
         <div className="eyebrow">New project</div>
         <div className="page-title">Set up your story</div>
         <div className="page-sub">
-          Fill in the template below. Storyloom uses every field here — genre, cast, conflicts — to draft your opening plot.
+          Genre is the only required field — everything else is optional and only sharpens the draft.
         </div>
       </div>
       <div className="wizard-grid">
@@ -146,7 +151,9 @@ export default function NewProjectView({ active }) {
           />
           <ResolutionSection resolution={resolution} onResolutionChange={setResolution} />
 
-          <button className="primary-btn" onClick={handleGeneratePlot}>✨ Generate starting plot</button>
+          <button className="primary-btn" onClick={handleGeneratePlot}>
+            ✨ Generate starting plot
+          </button>
 
           <div ref={plotRef}>
             {genError && <div className="section-hint" style={{ color: 'var(--c-danger, #D9534F)' }}>{genError}</div>}
@@ -156,6 +163,8 @@ export default function NewProjectView({ active }) {
 
         <CopilotPanel />
       </div>
+
+      <Toast message={toastMessage} show={toastShow} />
     </div>
   );
 }
