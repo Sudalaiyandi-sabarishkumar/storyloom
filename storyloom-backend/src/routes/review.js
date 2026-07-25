@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import * as projectRepo from '../db/repositories/projectRepo.js';
 import * as reviewAgent from '../agents/reviewAgent.js';
+import * as sceneAgent from '../agents/sceneAgent.js';
 
 const router = Router({ mergeParams: true });
 
@@ -27,6 +28,23 @@ router.post('/impact-check', asyncHandler(async (req, res) => {
 
   const result = await reviewAgent.checkImpact(entityName, projectId, storyContext);
   res.json(result);
+}));
+
+// POST /api/projects/:id/impact-check/remove  { entityName }
+// Backs the impact-check modal's "Remove anyway" button — tries a matching
+// character first, then a matching scene title.
+router.post('/impact-check/remove', asyncHandler(async (req, res) => {
+  const projectId = req.params.id;
+  const { entityName } = req.body || {};
+  if (!entityName) return res.status(400).json({ error: 'entityName is required' });
+
+  if (await projectRepo.deleteCharacterByName(projectId, entityName)) {
+    return res.json({ removed: true, type: 'character' });
+  }
+  if (await sceneAgent.deleteSceneByTitle(projectId, entityName)) {
+    return res.json({ removed: true, type: 'scene' });
+  }
+  res.status(404).json({ removed: false, error: `No character or scene named "${entityName}" found` });
 }));
 
 export default router;

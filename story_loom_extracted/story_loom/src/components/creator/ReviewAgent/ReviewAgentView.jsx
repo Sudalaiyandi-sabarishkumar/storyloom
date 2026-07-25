@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import FeedbackList from './FeedbackList.jsx';
 import ImpactModal from './ImpactModal.jsx';
-import { getFeedback, checkImpact } from '../../../services/reviewAgent.js';
+import { getFeedback, checkImpact, removeEntity } from '../../../services/reviewAgent.js';
 import { submitProject } from '../../../services/projectsService.js';
 import { useProject } from '../../../context/ProjectContext.jsx';
 
 export default function ReviewAgentView({ active }) {
-  const { projectId, hasPlot, storyVersion, isSubmitted, markSubmitted } = useProject();
+  const { projectId, hasPlot, storyVersion, isSubmitted, markSubmitted, bumpStoryVersion } = useProject();
   const [feedback, setFeedback] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -16,6 +16,8 @@ export default function ReviewAgentView({ active }) {
   const [entityName, setEntityName] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [removing, setRemoving] = useState(false);
+  const [removeError, setRemoveError] = useState('');
 
   const impactTarget = entityName.trim();
 
@@ -46,6 +48,7 @@ export default function ReviewAgentView({ active }) {
     setModalOpen(true);
     setScanning(true);
     setImpactResult(null);
+    setRemoveError('');
     try {
       const result = await checkImpact(impactTarget, projectId);
       setImpactResult(result);
@@ -53,6 +56,22 @@ export default function ReviewAgentView({ active }) {
       setImpactResult({ risk: 'review', summary: err.message || 'Could not run the impact check.', scenes: [] });
     } finally {
       setScanning(false);
+    }
+  }
+
+  async function handleConfirmRemove() {
+    setRemoving(true);
+    setRemoveError('');
+    try {
+      await removeEntity(impactTarget, projectId);
+      setModalOpen(false);
+      setEntityName('');
+      setImpactResult(null);
+      bumpStoryVersion(); // Story Editor / Knowledge Graph should reflect the removal
+    } catch (err) {
+      setRemoveError(err.message || 'Could not remove this — try again.');
+    } finally {
+      setRemoving(false);
     }
   }
 
@@ -97,18 +116,24 @@ export default function ReviewAgentView({ active }) {
 
             <div className="card section-card impact-trigger" style={{ marginTop: '20px' }}>
               <div className="section-label" style={{ fontSize: '15px' }}>Try the impact checker</div>
-              <div className="section-hint">Enter the exact name of a character or scene to see what depends on it before you remove it.</div>
-              <input
-                className="rel-input"
-                type="text"
-                value={entityName}
-                onChange={(e) => setEntityName(e.target.value)}
-                placeholder="Character or scene name"
-                style={{ marginBottom: '10px' }}
-              />
-              <button className="ghost-btn" onClick={openImpactModal} disabled={!impactTarget}>
-                🗑 Check "{impactTarget || '…'}"
-              </button>
+              {isSubmitted ? (
+                <div className="section-hint">This story has been submitted and is read-only — the impact checker is disabled.</div>
+              ) : (
+                <>
+                  <div className="section-hint">Enter the exact name of a character or scene to see what depends on it before you remove it.</div>
+                  <input
+                    className="rel-input"
+                    type="text"
+                    value={entityName}
+                    onChange={(e) => setEntityName(e.target.value)}
+                    placeholder="Character or scene name"
+                    style={{ marginBottom: '10px' }}
+                  />
+                  <button className="ghost-btn" onClick={openImpactModal} disabled={!impactTarget}>
+                    🗑 Check "{impactTarget || '…'}"
+                  </button>
+                </>
+              )}
             </div>
           </div>
           <div className="copilot-panel card">
@@ -147,6 +172,9 @@ export default function ReviewAgentView({ active }) {
         result={impactResult}
         target={impactTarget}
         onClose={() => setModalOpen(false)}
+        onConfirmRemove={handleConfirmRemove}
+        removing={removing}
+        removeError={removeError}
       />
     </div>
   );

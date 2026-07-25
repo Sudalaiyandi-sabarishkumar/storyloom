@@ -1,7 +1,7 @@
 const RISK_CLASS = { safe: 'risk-safe', review: 'risk-review', high: 'risk-high' };
 const RISK_LABEL = { safe: 'Safe to remove', review: 'Needs review', high: 'High risk' };
 
-export default function ImpactModal({ open, scanning, result, target, onClose }) {
+export default function ImpactModal({ open, scanning, result, target, onClose, onConfirmRemove, removing, removeError }) {
   return (
     <div className={`modal-overlay ${open ? 'show' : ''}`}>
       <div className="modal-box">
@@ -21,9 +21,12 @@ export default function ImpactModal({ open, scanning, result, target, onClose })
                 <span>{s.label}</span><span>{s.status}</span>
               </div>
             ))}
+            {removeError && <div className="section-hint" style={{ color: 'var(--c-danger, #D9534F)' }}>{removeError}</div>}
             <div className="modal-actions">
-              <button className="secondary-btn" onClick={onClose}>Cancel</button>
-              <button className="primary-btn" style={{ flex: 1 }} onClick={onClose}>Remove anyway</button>
+              <button className="secondary-btn" onClick={onClose} disabled={removing}>Cancel</button>
+              <button className="primary-btn" style={{ flex: 1 }} onClick={onConfirmRemove} disabled={removing}>
+                {removing ? 'Removing…' : 'Remove anyway'}
+              </button>
             </div>
           </div>
         )}

@@ -35,5 +35,28 @@ export async function generateNextScene(option, storyContext, { regenerate = fal
   // immediately after generating.
   const accepted = await api.post(`/projects/${projectId}/scenes/generations/${generation.id}/accept`, {});
 
-  return { title: accepted.title, tone: accepted.tone, text: accepted.text };
+  // id/idx are needed so the freshly-picked card can be edited/deleted/
+  // regenerated immediately, without waiting for a reload.
+  return { id: accepted.id, idx: accepted.idx, title: accepted.title, tone: accepted.tone, text: accepted.text };
+}
+
+// Called by SceneCard's "Edit" (Save) action.
+export async function updateScene(sceneId, { title, tone, text }) {
+  const projectId = getCurrentProjectId();
+  if (!projectId) throw new Error('No active project.');
+  return api.patch(`/projects/${projectId}/scenes/${sceneId}`, { title, tone, text });
+}
+
+// Called by SceneCard's "Delete" action.
+export async function deleteScene(sceneId) {
+  const projectId = getCurrentProjectId();
+  if (!projectId) throw new Error('No active project.');
+  return api.delete(`/projects/${projectId}/scenes/${sceneId}`);
+}
+
+// Called by SceneCard's "Regenerate" action — rewrites the scene in place.
+export async function regenerateScene(sceneId) {
+  const projectId = getCurrentProjectId();
+  if (!projectId) throw new Error('No active project.');
+  return api.post(`/projects/${projectId}/scenes/${sceneId}/regenerate`, {});
 }

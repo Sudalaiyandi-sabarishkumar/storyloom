@@ -3,7 +3,11 @@ import ClimaxBar from './ClimaxBar.jsx';
 import MiniCast from './MiniCast.jsx';
 import Storyboard from './Storyboard.jsx';
 import NextSceneAgentPanel from './NextSceneAgentPanel.jsx';
-import { generateNextScene, getSceneSuggestions, listScenes } from '../../../services/sceneAgent.js';
+import {
+  generateNextScene, getSceneSuggestions, listScenes,
+  updateScene, deleteScene, regenerateScene,
+} from '../../../services/sceneAgent.js';
+import { updateOpeningPlotText, regenerateOpeningPlot, clearOpeningPlot } from '../../../services/plotAgent.js';
 import { useProject } from '../../../context/ProjectContext.jsx';
 
 // Climax bar is a simple heuristic (not backed by its own endpoint yet):
@@ -18,7 +22,7 @@ function numberScenes(rawScenes) {
 }
 
 export default function StoryEditorView({ active }) {
-  const { projectId, projectTitle, hasPlot, storyVersion, bumpStoryVersion, isSubmitted } = useProject();
+  const { projectId, projectTitle, hasPlot, openingPlot, storyVersion, bumpStoryVersion, isSubmitted, notifyPlotGenerated } = useProject();
 
   const [scenes, setScenes] = useState([]);
   const [options, setOptions] = useState([]);
@@ -56,7 +60,10 @@ export default function StoryEditorView({ active }) {
       try {
         const persisted = await listScenes(projectId);
         if (cancelled) return;
-        setScenes(numberScenes(persisted));
+        // Stored raw (no display numbering baked in) — numbering is derived
+        // at render time in `displayScenes` so Edit never persists a "2. "
+        // prefix back into the title.
+        setScenes(persisted);
       } catch (err) {
         if (!cancelled) setError(err.message || 'Could not load the storyboard.');
       } finally {
@@ -75,7 +82,7 @@ export default function StoryEditorView({ active }) {
     try {
       const scene = await generateNextScene(option, { scenes });
       setScenes((prev) => {
-        const next = [...prev, { ...scene, title: `${prev.length + 1}. ${scene.title}` }];
+        const next = [...prev, scene];
         setNewestIndex(next.length - 1);
         return next;
       });
@@ -88,6 +95,50 @@ export default function StoryEditorView({ active }) {
       setGenerating(false);
     }
   }
+
+  // Scene-card actions route to either the plot endpoints (for the pseudo
+  // "Opening Plot" card) or the scene endpoints, based on scene.kind.
+  async function handleEditScene(scene, patch) {
+    if (scene.kind === 'plot') {
+      const result = await updateOpeningPlotText(patch.text);
+      notifyPlotGenerated({ id: projectId, title: projectTitle, text: result.text });
+      return;
+    }
+    const updated = await updateScene(scene.id, patch);
+    setScenes((prev) => prev.map((s) => (s.id === scene.id ? { ...s, ...updated } : s)));
+    bumpStoryVersion();
+  }
+
+  async function handleDeleteScene(scene) {
+    if (scene.kind === 'plot') {
+      await clearOpeningPlot();
+      notifyPlotGenerated({ id: projectId, title: projectTitle, text: '' });
+      return;
+    }
+    await deleteScene(scene.id);
+    setScenes((prev) => prev.filter((s) => s.id !== scene.id));
+    bumpStoryVersion();
+    refreshSuggestions();
+  }
+
+  async function handleRegenerateScene(scene) {
+    if (scene.kind === 'plot') {
+      const result = await regenerateOpeningPlot();
+      notifyPlotGenerated({ id: projectId, title: projectTitle, text: result.text });
+      return;
+    }
+    const updated = await regenerateScene(scene.id);
+    setScenes((prev) => prev.map((s) => (s.id === scene.id ? { ...s, ...updated } : s)));
+    bumpStoryVersion();
+  }
+
+  // The opening plot isn't a real "scene" in the backend — it's grafted on
+  // as a pinned first card so the storyboard reads start-to-finish.
+  const openingPseudoScene = hasPlot ? { kind: 'plot', title: 'Opening Plot', tone: 'Origin', text: openingPlot } : null;
+  const displayScenes = numberScenes(
+    openingPseudoScene ? [openingPseudoScene, ...scenes] : scenes
+  );
+  const displayNewestIndex = newestIndex === null ? null : newestIndex + (openingPseudoScene ? 1 : 0);
 
   return (
     <div id="c-editor" className={`view ${active ? 'active' : ''}`}>
@@ -109,7 +160,15 @@ export default function StoryEditorView({ active }) {
           {loadingBoard ? (
             <div className="card drawer-empty">Loading storyboard…</div>
           ) : (
-            <Storyboard scenes={scenes} newestIndex={newestIndex} endRef={boardEndRef} />
+            <Storyboard
+              scenes={displayScenes}
+              newestIndex={displayNewestIndex}
+              endRef={boardEndRef}
+              readOnly={isSubmitted}
+              onEditScene={handleEditScene}
+              onDeleteScene={handleDeleteScene}
+              onRegenerateScene={handleRegenerateScene}
+            />
           )}
           {isSubmitted ? (
             <div className="card drawer-empty" style={{ padding: '40px 24px' }}>

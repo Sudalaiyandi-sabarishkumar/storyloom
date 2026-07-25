@@ -104,3 +104,67 @@ export async function listScenes(projectId) {
     ORDER BY idx ASC
   `);
 }
+
+async function getScene(projectId, sceneId) {
+  const [scene] = await query(`
+    SELECT * FROM ${SCENE_T()} WHERE id = ${esc(sceneId)} AND project_id = ${esc(projectId)}
+  `);
+  return scene || null;
+}
+
+/** Direct in-place edit of an accepted scene — not versioned, like the plot's updatePlotText. */
+export async function updateScene(projectId, sceneId, { title, tone, text }) {
+  const existing = await getScene(projectId, sceneId);
+  if (!existing) throw Object.assign(new Error('Scene not found'), { status: 404 });
+
+  const sets = [];
+  if (title !== undefined) sets.push(`title = ${esc(title)}`);
+  if (tone !== undefined) sets.push(`tone = ${esc(tone)}`);
+  if (text !== undefined) sets.push(`text = ${esc(text)}`);
+  sets.push(`updated_at = current_timestamp()`);
+
+  await query(`UPDATE ${SCENE_T()} SET ${sets.join(', ')} WHERE id = ${esc(sceneId)} AND project_id = ${esc(projectId)}`);
+  return getScene(projectId, sceneId);
+}
+
+export async function deleteScene(projectId, sceneId) {
+  const existing = await getScene(projectId, sceneId);
+  if (!existing) throw Object.assign(new Error('Scene not found'), { status: 404 });
+  await query(`DELETE FROM ${SCENE_T()} WHERE id = ${esc(sceneId)} AND project_id = ${esc(projectId)}`);
+}
+
+/** Case/whitespace-insensitive delete used by the Review Agent's "Remove anyway" flow. */
+export async function deleteSceneByTitle(projectId, title) {
+  const matches = await query(`
+    SELECT id FROM ${SCENE_T()}
+    WHERE project_id = ${esc(projectId)} AND LOWER(TRIM(title)) = LOWER(TRIM(${esc(title)}))
+  `);
+  if (!matches.length) return false;
+  await query(`
+    DELETE FROM ${SCENE_T()}
+    WHERE project_id = ${esc(projectId)} AND LOWER(TRIM(title)) = LOWER(TRIM(${esc(title)}))
+  `);
+  return true;
+}
+
+/**
+ * Regenerates an already-accepted scene in place: keeps its title/tone/idx
+ * (so its position in the timeline is stable) but rewrites its text, grounded
+ * in the same prior-scenes context as generateNextScene minus itself.
+ */
+export async function regenerateSceneInPlace(projectId, sceneId, storyContext) {
+  const scene = await getScene(projectId, sceneId);
+  if (!scene) throw Object.assign(new Error('Scene not found'), { status: 404 });
+
+  const priorScenes = (storyContext.priorScenes || []).filter((s) => s.title !== scene.title);
+  const option = { title: scene.title, tone: scene.tone, hook: scene.tone, desc: scene.title, text: scene.text };
+
+  const text = await generateText({
+    system: sceneSystemPrompt(),
+    prompt: sceneUserPrompt(option, { ...storyContext, priorScenes }),
+    temperature: Math.min(1, config.ai.temperature + 0.1),
+  });
+
+  await query(`UPDATE ${SCENE_T()} SET text = ${esc(text)}, updated_at = current_timestamp() WHERE id = ${esc(sceneId)} AND project_id = ${esc(projectId)}`);
+  return getScene(projectId, sceneId);
+}

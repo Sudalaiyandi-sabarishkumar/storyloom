@@ -98,6 +98,20 @@ export async function listProjects() {
   return query(`SELECT id, title, genres, status, created_at FROM ${PROJECT_T()} ORDER BY created_at DESC`);
 }
 
+/** Case/whitespace-insensitive delete used by the Review Agent's "Remove anyway" flow. */
+export async function deleteCharacterByName(projectId, name) {
+  const matches = await query(`
+    SELECT id FROM ${CHAR_T()}
+    WHERE project_id = ${esc(projectId)} AND LOWER(TRIM(name)) = LOWER(TRIM(${esc(name)}))
+  `);
+  if (!matches.length) return false;
+  await query(`
+    DELETE FROM ${CHAR_T()}
+    WHERE project_id = ${esc(projectId)} AND LOWER(TRIM(name)) = LOWER(TRIM(${esc(name)}))
+  `);
+  return true;
+}
+
 /** Transitions a project's status (e.g. draft -> in_review on submit). */
 export async function updateProjectStatus(id, status) {
   const existing = await query(`SELECT id FROM ${PROJECT_T()} WHERE id = ${esc(id)}`);

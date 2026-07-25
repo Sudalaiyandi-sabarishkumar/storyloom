@@ -13,3 +13,10 @@ export async function checkImpact(entityName, storyId) {
   if (!projectId) throw new Error('No active project yet.');
   return api.post(`/projects/${projectId}/impact-check`, { entityName });
 }
+
+// Called by ImpactModal's "Remove anyway" button, via ReviewAgentView.
+export async function removeEntity(entityName, storyId) {
+  const projectId = storyId || getCurrentProjectId();
+  if (!projectId) throw new Error('No active project yet.');
+  return api.post(`/projects/${projectId}/impact-check/remove`, { entityName });
+}

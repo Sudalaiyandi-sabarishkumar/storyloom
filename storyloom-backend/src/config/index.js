@@ -9,18 +9,25 @@ function required(name, fallback = undefined) {
   return v;
 }
 
+// One entry per provider registered in ai/index.js's `providers` map.
+const AI_PROVIDERS = {
+  anthropic: { apiKeyEnv: 'ANTHROPIC_API_KEY', defaultModel: 'claude-sonnet-5' },
+  openai: { apiKeyEnv: 'OPENAI_API_KEY', defaultModel: 'gpt-4o' },
+  gemini: { apiKeyEnv: 'GEMINI_API_KEY', defaultModel: 'gemini-3.6-flash' },
+};
+
+const aiProvider = (process.env.AI_PROVIDER || 'anthropic').toLowerCase();
+const aiProviderConfig = AI_PROVIDERS[aiProvider] || AI_PROVIDERS.anthropic;
+
 export const config = {
   env: process.env.NODE_ENV || 'development',
   port: Number(process.env.PORT || 8080),
   corsOrigin: process.env.CORS_ORIGIN || '*',
 
   ai: {
-    provider: (process.env.AI_PROVIDER || 'anthropic').toLowerCase(), // 'anthropic' | 'openai'
-    apiKey: process.env.AI_PROVIDER === 'openai'
-      ? required('OPENAI_API_KEY')
-      : required('ANTHROPIC_API_KEY'),
-    model: process.env.AI_MODEL
-      || (process.env.AI_PROVIDER === 'openai' ? 'gpt-4o' : 'claude-sonnet-5'),
+    provider: aiProvider, // 'anthropic' | 'openai' | 'gemini'
+    apiKey: required(aiProviderConfig.apiKeyEnv),
+    model: process.env.AI_MODEL || aiProviderConfig.defaultModel,
     maxTokens: Number(process.env.AI_MAX_TOKENS || 1500),
     temperature: Number(process.env.AI_TEMPERATURE || 0.9),
   },

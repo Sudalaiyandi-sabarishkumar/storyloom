@@ -46,4 +46,28 @@ router.post('/generations/:generationId/accept', asyncHandler(async (req, res) =
   res.status(201).json(scene);
 }));
 
+// PATCH /api/projects/:id/scenes/:sceneId  { title?, tone?, text? }
+// Direct in-place edit from the scene card's "Edit" action.
+router.patch('/:sceneId', asyncHandler(async (req, res) => {
+  const { title, tone, text } = req.body || {};
+  const scene = await sceneAgent.updateScene(req.params.id, req.params.sceneId, { title, tone, text });
+  res.json(scene);
+}));
+
+router.delete('/:sceneId', asyncHandler(async (req, res) => {
+  await sceneAgent.deleteScene(req.params.id, req.params.sceneId);
+  res.status(204).end();
+}));
+
+// POST /api/projects/:id/scenes/:sceneId/regenerate
+// Rewrites the scene's text in place from the scene card's "Regenerate" action.
+router.post('/:sceneId/regenerate', asyncHandler(async (req, res) => {
+  const projectId = req.params.id;
+  const storyContext = await projectRepo.buildStoryContext(projectId);
+  if (!storyContext) return res.status(404).json({ error: 'Project not found' });
+
+  const scene = await sceneAgent.regenerateSceneInPlace(projectId, req.params.sceneId, storyContext);
+  res.json(scene);
+}));
+
 export default router;

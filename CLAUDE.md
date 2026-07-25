@@ -55,7 +55,7 @@ There is no test suite or lint config in either project currently.
 src/
   config/            env loading (config/index.js)
   ai/
-    anthropicClient.js / openaiClient.js   provider-specific generateText()/generateJSON()
+    anthropicClient.js / openaiClient.js / geminiClient.js   provider-specific generateText()/generateJSON()
     index.js                                picks the active provider from config.ai.provider
     prompts.js                               versioned prompt templates, one per agent
   agents/            plotAgent, sceneAgent, reviewAgent, rankingAgent — business logic, call ai/ and db/
@@ -70,7 +70,7 @@ src/
   server.js            entrypoint, just listens
 ```
 
-`AI_PROVIDER` env var (`anthropic` default, or `openai`) selects the client in `ai/index.js` — both expose the same `generateText`/`generateJSON` interface, so agents never import a provider client directly. Adding a third provider means adding a client module with that same interface and registering it in `ai/index.js`'s `providers` map.
+`AI_PROVIDER` env var (`anthropic` default, `openai`, or `gemini`) selects the client in `ai/index.js` — all three expose the same `generateText`/`generateJSON` interface, so agents never import a provider client directly. Adding another provider means adding a client module with that same interface and registering it in `ai/index.js`'s `providers` map.
 
 ### Regeneration model (backend)
 

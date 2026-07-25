@@ -47,6 +47,27 @@ export async function selectPlotVersion(projectId, generationId) {
   await query(`UPDATE ${T()} SET is_selected = TRUE WHERE id = ${esc(generationId)} AND project_id = ${esc(projectId)}`);
 }
 
+/** Direct edit of the currently-selected plot's text — not a new version, mirrors scene edits. */
+export async function updatePlotText(projectId, text) {
+  await query(`
+    UPDATE ${T()} SET text = ${esc(text)} WHERE project_id = ${esc(projectId)} AND is_selected = TRUE
+  `);
+  const [row] = await query(`
+    SELECT id, text FROM ${T()} WHERE project_id = ${esc(projectId)} AND is_selected = TRUE
+  `);
+  if (!row) throw Object.assign(new Error('No selected opening plot to edit'), { status: 404 });
+  return row;
+}
+
+/**
+ * Soft-clears the opening plot (deselects it) without deleting history — the
+ * writer can still recover an old version via opening-plot/history + /select.
+ * This is what "Delete" means on the opening-plot card in Story Editor.
+ */
+export async function clearOpeningPlot(projectId) {
+  await query(`UPDATE ${T()} SET is_selected = FALSE WHERE project_id = ${esc(projectId)}`);
+}
+
 async function pruneHistory(projectId) {
   const rows = await query(`
     SELECT id FROM ${T()} WHERE project_id = ${esc(projectId)} ORDER BY created_at DESC

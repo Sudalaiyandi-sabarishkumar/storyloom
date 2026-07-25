@@ -26,4 +26,20 @@ router.post('/opening-plot/:generationId/select', asyncHandler(async (req, res) 
   res.status(204).end();
 }));
 
+// PATCH /api/projects/:id/opening-plot  { text }
+// Direct in-place edit from the opening-plot card's "Edit" action.
+router.patch('/opening-plot', asyncHandler(async (req, res) => {
+  const { text } = req.body || {};
+  if (typeof text !== 'string') return res.status(400).json({ error: 'text is required' });
+  const result = await plotAgent.updatePlotText(req.params.id, text);
+  res.json(result);
+}));
+
+// POST /api/projects/:id/opening-plot/clear
+// "Delete" on the opening-plot card — deselects it without losing history.
+router.post('/opening-plot/clear', asyncHandler(async (req, res) => {
+  await plotAgent.clearOpeningPlot(req.params.id);
+  res.status(204).end();
+}));
+
 export default router;
