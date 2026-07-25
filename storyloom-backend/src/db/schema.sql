@@ -125,3 +125,21 @@ CREATE TABLE IF NOT EXISTS audience_simulations (
   why_text         STRING,
   computed_at      TIMESTAMP
 ) USING DELTA;
+
+-- Synthetic listener panel (seeded from src/dataset/story_listener.csv via
+-- `npm run db:seed-listeners`) used to ground Rankings/Audience Simulation
+-- in retrieved real listener data (RAG) instead of pure LLM guesses.
+CREATE TABLE IF NOT EXISTS listener_profiles (
+  id               STRING NOT NULL,
+  source_id        STRING,      -- CSV row id, e.g. "ID0001"
+  age              INT,
+  country          STRING,
+  language         STRING,
+  personality      STRING,
+  reading_habits   STRING,
+  favourite_genres STRING,
+  patience         STRING,
+  persona_text     STRING,      -- natural-language rendering of the row, the text that was embedded
+  embedding_json   STRING,      -- JSON array of floats (text-embedding-3-small)
+  created_at       TIMESTAMP
+) USING DELTA;

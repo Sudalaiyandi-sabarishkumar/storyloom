@@ -21,6 +21,7 @@ export default function NewProjectView({ active }) {
   const [background, setBackground] = useState('');
   const [resolution, setResolution] = useState('');
   const [showPlot, setShowPlot] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState('');
   const [toastMessage, setToastMessage] = useState('');
   const [toastShow, setToastShow] = useState(false);
@@ -92,6 +93,7 @@ export default function NewProjectView({ active }) {
     }
     setShowPlot(true);
     setGenError('');
+    setGenerating(true);
     plotRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     try {
       const result = await generateOpeningPlot({
@@ -110,6 +112,8 @@ export default function NewProjectView({ active }) {
       notifyPlotGenerated(result);
     } catch (err) {
       setGenError(err.message || 'Could not generate a plot — try again.');
+    } finally {
+      setGenerating(false);
     }
   }
 
@@ -151,8 +155,8 @@ export default function NewProjectView({ active }) {
           />
           <ResolutionSection resolution={resolution} onResolutionChange={setResolution} />
 
-          <button className="primary-btn" onClick={handleGeneratePlot}>
-            ✨ Generate starting plot
+          <button className="primary-btn" onClick={handleGeneratePlot} disabled={generating}>
+            {generating ? (<><span className="spinner"></span> Generating…</>) : '✨ Generate starting plot'}
           </button>
 
           <div ref={plotRef}>

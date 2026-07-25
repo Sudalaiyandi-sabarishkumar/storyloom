@@ -6,6 +6,7 @@ import {
 } from '../ai/prompts.js';
 import { query, qualifiedTable, esc, escArray } from '../db/databricksClient.js';
 import { config } from '../config/index.js';
+import { retrieveRelevantListeners, summarizeListeners } from './listenerRetrieval.js';
 
 const RANK_T = () => qualifiedTable('rankings');
 const AUD_T = () => qualifiedTable('audience_simulations');
@@ -59,9 +60,13 @@ async function scoreProject(project) {
   if (config.databricks.servingEndpointUrl) {
     return scoreWithModelServing(project);
   }
+  const brief = { title: project.title, genres: project.genres, coreStory: project.core_story };
+  const retrievedListeners = await retrieveRelevantListeners(brief);
+  const retrieval = summarizeListeners(retrievedListeners);
+
   const result = await generateJSON({
     system: rankingSystemPrompt(),
-    prompt: rankingUserPrompt({ title: project.title, genres: project.genres, coreStory: project.core_story }),
+    prompt: rankingUserPrompt(brief, retrieval),
     temperature: 0.5,
   });
   return {
@@ -125,9 +130,13 @@ export async function getAudienceSimulation(projectTitle, { forceRecompute = fal
     if (cached) return formatAudience(cached, sceneThumbs);
   }
 
+  const brief = { title: p.title, genres: p.genres, logline: p.core_story };
+  const retrievedListeners = await retrieveRelevantListeners(brief);
+  const retrieval = summarizeListeners(retrievedListeners);
+
   const result = await generateJSON({
     system: audienceSystemPrompt(),
-    prompt: audienceUserPrompt({ title: p.title, genres: p.genres, logline: p.core_story }),
+    prompt: audienceUserPrompt(brief, retrieval),
     temperature: 0.5,
   });
 

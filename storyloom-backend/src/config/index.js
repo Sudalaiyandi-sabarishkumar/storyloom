@@ -32,6 +32,13 @@ export const config = {
     temperature: Number(process.env.AI_TEMPERATURE || 0.9),
   },
 
+  // Listener-panel RAG (rankingAgent grounding) always embeds via OpenAI,
+  // independent of which AI_PROVIDER is chosen for chat generation above.
+  embeddings: {
+    apiKey: required('OPENAI_API_KEY'),
+    model: 'text-embedding-3-small',
+  },
+
   databricks: {
     serverHostname: required('DATABRICKS_SERVER_HOSTNAME'),
     httpPath: required('DATABRICKS_HTTP_PATH'),

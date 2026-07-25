@@ -119,40 +119,49 @@ export function impactUserPrompt(entityName, storyContext) {
   ].filter(Boolean).join('\n');
 }
 
-export const RANKING_PROMPT_VERSION = 'ranking-v1';
+export const RANKING_PROMPT_VERSION = 'ranking-v2-rag';
 export function rankingSystemPrompt() {
   return [
-    'You are Storyloom\'s greenlight Ranking Agent. Given a project brief, estimate a "score"',
-    'and "fit" out of 100, plus a 7-point "spark" trend array (0-100) representing projected',
-    'audience engagement over the episode arc. Return JSON exactly: { "score": int, "fit": int,',
-    '"spark": [int x7] }. Be a discerning but fair critic — most projects should land 55-90.',
+    'You are Storyloom\'s greenlight Ranking Agent. Given a project brief and a retrieved panel of',
+    'real listeners most relevant to it, estimate a "score" and "fit" out of 100, plus a 7-point',
+    '"spark" trend array (0-100) representing projected audience engagement over the episode arc.',
+    'Return JSON exactly: { "score": int, "fit": int, "spark": [int x7] }. Be a discerning but fair',
+    'critic — most projects should land 55-90. Weigh the retrieved panel\'s real genre-match and',
+    'patience stats over vibes from the logline alone — a low genre-match percentage should pull',
+    '"fit" down even if the premise sounds strong.',
   ].join(' ');
 }
-export function rankingUserPrompt(project) {
+export function rankingUserPrompt(project, retrieval) {
   return [
     `Title: ${project.title}`,
     `Genres: ${(project.genres || []).join(', ')}`,
     `Logline/core story: ${project.coreStory || project.logline || 'unspecified'}`,
+    retrieval?.promptBlock || null,
     'Return the JSON score now.',
-  ].join('\n');
+  ].filter(Boolean).join('\n');
 }
 
-export const AUDIENCE_PROMPT_VERSION = 'audience-v1';
+export const AUDIENCE_PROMPT_VERSION = 'audience-v2-rag';
 export function audienceSystemPrompt() {
   return [
     'You are Storyloom\'s audience-simulation agent, modeling how a viewer panel would respond to a',
-    'script. Return JSON exactly: { "demographics": [{"label": string, "value": int0-100}] (6 items:',
-    'Age fit, Genre affinity, Patience match, Listening speed, Language reach, Country spread),',
-    '"heroScore": int0-100, "whyText": string (2-3 sentences explaining the score, mention the weakest',
-    'demographic by name) }.',
+    'script. You are given a retrieved panel of real listeners most relevant to this story — ground',
+    'every number in that real data rather than inventing it independently (e.g. "Genre affinity" and',
+    '"Patience match" should track the panel\'s actual genre-match and patience percentages; "Country',
+    'spread" and "Language reach" should track its actual country/language mix). Return JSON exactly:',
+    '{ "demographics": [{"label": string, "value": int0-100}] (6 items: Age fit, Genre affinity,',
+    'Patience match, Listening speed, Language reach, Country spread), "heroScore": int0-100,',
+    '"whyText": string (2-3 sentences explaining the score, referencing the retrieved panel and',
+    'mentioning the weakest demographic by name) }.',
   ].join(' ');
 }
-export function audienceUserPrompt(project) {
+export function audienceUserPrompt(project, retrieval) {
   return [
     `Title: ${project.title}`,
     `Genres: ${(project.genres || []).join(', ')}`,
     `Logline: ${project.logline || project.coreStory || 'unspecified'}`,
     `Scene count: ${(project.sceneThumbs || project.scenes || []).length || 'unknown'}`,
+    retrieval?.promptBlock || null,
     'Return the JSON simulation now.',
-  ].join('\n');
+  ].filter(Boolean).join('\n');
 }
