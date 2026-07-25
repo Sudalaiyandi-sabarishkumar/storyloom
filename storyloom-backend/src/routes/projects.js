@@ -48,4 +48,11 @@ router.patch('/:id', asyncHandler(async (req, res) => {
   res.json(project);
 }));
 
+// POST /api/projects/:id/submit — moves a story from Creator Studio's draft
+// state into Director's Room by flipping status away from 'draft'.
+router.post('/:id/submit', asyncHandler(async (req, res) => {
+  const project = await projectRepo.updateProjectStatus(req.params.id, 'in_review');
+  res.json(project);
+}));
+
 export default router;

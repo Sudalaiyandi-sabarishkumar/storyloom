@@ -2,20 +2,22 @@ import { useEffect, useState } from 'react';
 import FeedbackList from './FeedbackList.jsx';
 import ImpactModal from './ImpactModal.jsx';
 import { getFeedback, checkImpact } from '../../../services/reviewAgent.js';
+import { submitProject } from '../../../services/projectsService.js';
 import { useProject } from '../../../context/ProjectContext.jsx';
 
 export default function ReviewAgentView({ active }) {
-  const { projectId, hasPlot, characters, storyVersion } = useProject();
+  const { projectId, hasPlot, storyVersion, isSubmitted, markSubmitted } = useProject();
   const [feedback, setFeedback] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [impactResult, setImpactResult] = useState(null);
+  const [entityName, setEntityName] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
-  // The impact checker needs a concrete cast member — use whoever the writer
-  // actually created, instead of a hardcoded name from an unrelated story.
-  const impactTarget = characters[0]?.name;
+  const impactTarget = entityName.trim();
 
   useEffect(() => {
     if (!active || !projectId) return;
@@ -54,6 +56,19 @@ export default function ReviewAgentView({ active }) {
     }
   }
 
+  async function handleSubmit() {
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      await submitProject(projectId);
+      markSubmitted();
+    } catch (err) {
+      setSubmitError(err.message || 'Could not submit this story — try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   const critCount = feedback.filter((f) => f.severity === 'crit').length;
   const warnCount = feedback.filter((f) => f.severity === 'warn').length;
   const infoCount = feedback.filter((f) => f.severity === 'info').length;
@@ -82,9 +97,17 @@ export default function ReviewAgentView({ active }) {
 
             <div className="card section-card impact-trigger" style={{ marginTop: '20px' }}>
               <div className="section-label" style={{ fontSize: '15px' }}>Try the impact checker</div>
-              <div className="section-hint">See what happens before you remove a character or scene.</div>
+              <div className="section-hint">Enter the exact name of a character or scene to see what depends on it before you remove it.</div>
+              <input
+                className="rel-input"
+                type="text"
+                value={entityName}
+                onChange={(e) => setEntityName(e.target.value)}
+                placeholder="Character or scene name"
+                style={{ marginBottom: '10px' }}
+              />
               <button className="ghost-btn" onClick={openImpactModal} disabled={!impactTarget}>
-                {impactTarget ? `🗑 Remove "${impactTarget}"` : 'No characters to check yet'}
+                🗑 Check "{impactTarget || '…'}"
               </button>
             </div>
           </div>
@@ -99,6 +122,21 @@ export default function ReviewAgentView({ active }) {
             <div className="suggestion-line">
               Overall story health: <b>{critCount === 0 ? 'Strong' : 'Needs attention'}</b> — based on the latest AI review pass.
             </div>
+
+            <div className="copilot-head" style={{ marginTop: '20px' }}>
+              <span style={{ fontWeight: 600, fontSize: '14px' }}>Submit to Director's Room</span>
+            </div>
+            {isSubmitted ? (
+              <div className="suggestion-line">✓ Submitted — this story is now read-only in Creator Studio.</div>
+            ) : (
+              <>
+                <div className="suggestion-line">Once you submit, this story locks and appears in Director's Room for greenlight review.</div>
+                {submitError && <div className="section-hint" style={{ color: 'var(--c-danger, #D9534F)' }}>{submitError}</div>}
+                <button className="primary-btn" onClick={handleSubmit} disabled={submitting} style={{ marginTop: '10px' }}>
+                  {submitting ? 'Submitting…' : 'Submit for review'}
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

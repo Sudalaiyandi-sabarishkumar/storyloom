@@ -32,6 +32,10 @@ export function setCurrentProjectId(id) {
   localStorage.setItem(PROJECT_ID_KEY, id);
 }
 
+export function clearCurrentProjectId() {
+  localStorage.removeItem(PROJECT_ID_KEY);
+}
+
 /**
  * The prototype UI has no project-switcher — it edits "the current project"
  * in place. This creates the project on first use and updates it on every

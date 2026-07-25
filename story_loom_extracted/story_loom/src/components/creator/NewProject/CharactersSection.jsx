@@ -40,11 +40,16 @@ export default function CharactersSection({ characters, onAddCharacter, onCharac
             <div className="rel-row">
               •{' '}
               <input
+                // Remount when the cast list changes size (add/remove) so a
+                // shifted row picks up its own relationships instead of a
+                // stale sibling's text — see onBlur below for why this is
+                // uncontrolled in the first place.
+                key={`${i}-${characters.length}`}
                 className="rel-input"
                 type="text"
-                value={char.relationships.join(', ')}
+                defaultValue={char.relationships.join(', ')}
                 placeholder="Add relationship, comma separated"
-                onChange={(e) =>
+                onBlur={(e) =>
                   onCharacterChange(
                     i,
                     'relationships',

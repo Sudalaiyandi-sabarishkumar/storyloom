@@ -18,7 +18,9 @@ const PROJECT_T = () => qualifiedTable('projects');
  * scoreWithModelServing below) once you have a trained ranking model.
  */
 export async function getRankings({ forceRecompute = false } = {}) {
-  const projects = await query(`SELECT id, title, genres, core_story FROM ${PROJECT_T()}`);
+  // Director's Room only sees stories the writer has submitted for review —
+  // drafts stay in Creator Studio until that happens.
+  const projects = await query(`SELECT id, title, genres, core_story FROM ${PROJECT_T()} WHERE status != 'draft'`);
 
   const results = [];
   for (const p of projects) {

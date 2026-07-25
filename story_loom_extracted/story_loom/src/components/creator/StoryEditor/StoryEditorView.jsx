@@ -18,7 +18,7 @@ function numberScenes(rawScenes) {
 }
 
 export default function StoryEditorView({ active }) {
-  const { projectId, projectTitle, hasPlot, storyVersion, bumpStoryVersion } = useProject();
+  const { projectId, projectTitle, hasPlot, storyVersion, bumpStoryVersion, isSubmitted } = useProject();
 
   const [scenes, setScenes] = useState([]);
   const [options, setOptions] = useState([]);
@@ -111,7 +111,13 @@ export default function StoryEditorView({ active }) {
           ) : (
             <Storyboard scenes={scenes} newestIndex={newestIndex} endRef={boardEndRef} />
           )}
-          <NextSceneAgentPanel options={options} onPick={pickScene} generating={generating} loading={loadingOptions} />
+          {isSubmitted ? (
+            <div className="card drawer-empty" style={{ padding: '40px 24px' }}>
+              This story has been submitted for review and is read-only.
+            </div>
+          ) : (
+            <NextSceneAgentPanel options={options} onPick={pickScene} generating={generating} loading={loadingOptions} />
+          )}
         </div>
       )}
     </div>

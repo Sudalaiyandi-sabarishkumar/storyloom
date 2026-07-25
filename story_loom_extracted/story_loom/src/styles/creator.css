@@ -148,6 +148,22 @@ input[type=text]:focus,textarea:focus{outline:none;border-color:var(--c-amber);b
 .risk-safe{background:rgba(217,140,61,.15);color:var(--c-amber-soft);}
 .risk-review{background:rgba(232,162,61,.18);color:#E8A23D;}
 .risk-high{background:rgba(217,83,79,.2);color:var(--c-danger);}
+
+/* ---------- My stories ---------- */
+.story-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;}
+.story-card{text-align:left;padding:20px;cursor:pointer;transition:all .2s ease;}
+.story-card:hover{transform:translateY(-3px);border-color:var(--c-amber);}
+.story-card-title{font-family:var(--font-serif);font-size:17px;font-weight:600;margin-top:10px;}
+.story-card-genres{font-size:12px;color:var(--c-text-dim);margin-top:6px;}
+.new-story-card{display:flex;flex-direction:column;align-items:center;justify-content:center;border-style:dashed;color:var(--c-text-dim);min-height:120px;}
+.new-story-card:hover{color:var(--c-amber);}
+.story-card-plus{font-size:26px;line-height:1;}
+.new-story-card .story-card-title{margin-top:8px;}
+.status-badge.status-draft{background:var(--c-surface2);color:var(--c-text-dim);}
+.status-badge.status-in_review{background:rgba(232,162,61,.18);color:#E8A23D;}
+.status-badge.status-ranked,.status-badge.status-greenlit{background:rgba(217,140,61,.15);color:var(--c-amber-soft);}
+.story-empty{grid-column:1/-1;padding:40px 24px;}
+.back-to-stories{margin-bottom:14px;}
 .affected-scene{display:flex;justify-content:space-between;font-size:12.5px;padding:8px 0;border-bottom:1px solid var(--c-border);color:var(--c-text-dim);}
 .affected-scene:last-child{border-bottom:none;}
 .modal-actions{display:flex;gap:10px;margin-top:18px;}

@@ -90,11 +90,24 @@ export async function getProject(id) {
   const characters = await query(`SELECT * FROM ${CHAR_T()} WHERE project_id = ${esc(id)}`);
   const conflicts = await query(`SELECT * FROM ${CONFLICT_T()} WHERE project_id = ${esc(id)}`);
   const scenes = await query(`SELECT * FROM ${SCENE_T()} WHERE project_id = ${esc(id)} ORDER BY idx ASC`);
-  return { ...project, characters, conflicts, scenes };
+  const openingPlot = await getSelectedPlotText(id);
+  return { ...project, characters, conflicts, scenes, openingPlot };
 }
 
 export async function listProjects() {
   return query(`SELECT id, title, genres, status, created_at FROM ${PROJECT_T()} ORDER BY created_at DESC`);
+}
+
+/** Transitions a project's status (e.g. draft -> in_review on submit). */
+export async function updateProjectStatus(id, status) {
+  const existing = await query(`SELECT id FROM ${PROJECT_T()} WHERE id = ${esc(id)}`);
+  if (!existing.length) {
+    const err = new Error('Project not found');
+    err.status = 404;
+    throw err;
+  }
+  await query(`UPDATE ${PROJECT_T()} SET status = ${esc(status)}, updated_at = current_timestamp() WHERE id = ${esc(id)}`);
+  return getProject(id);
 }
 
 /** Returns the currently-selected opening plot text for a project, or null. */
