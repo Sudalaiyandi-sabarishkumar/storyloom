@@ -45,4 +45,17 @@ export const config = {
   generation: {
     maxHistory: Number(process.env.MAX_GENERATION_HISTORY || 10),
   },
+
+  auth: {
+    jwtSecret: required('JWT_SECRET', 'dev-insecure-secret-change-me'),
+    tokenExpiry: process.env.JWT_EXPIRY || '7d',
+  },
+
+  // The one Director account — seeded by `npm run db:migrate`, never
+  // created via public signup (signup always creates role: 'creator').
+  director: {
+    username: process.env.DIRECTOR_USERNAME || 'director',
+    password: process.env.DIRECTOR_PASSWORD,
+    displayName: process.env.DIRECTOR_DISPLAY_NAME || 'Director',
+  },
 };

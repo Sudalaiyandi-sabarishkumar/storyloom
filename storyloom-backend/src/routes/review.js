@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import { requireRole } from '../middleware/auth.js';
 import * as projectRepo from '../db/repositories/projectRepo.js';
 import * as reviewAgent from '../agents/reviewAgent.js';
 import * as sceneAgent from '../agents/sceneAgent.js';
@@ -18,7 +19,7 @@ router.get('/feedback', asyncHandler(async (req, res) => {
 
 // POST /api/projects/:id/impact-check  { entityName }
 // Matches the frontend seam: checkImpact(entityName, storyId)
-router.post('/impact-check', asyncHandler(async (req, res) => {
+router.post('/impact-check', requireRole('creator'), asyncHandler(async (req, res) => {
   const projectId = req.params.id;
   const { entityName } = req.body || {};
   if (!entityName) return res.status(400).json({ error: 'entityName is required' });
@@ -33,7 +34,7 @@ router.post('/impact-check', asyncHandler(async (req, res) => {
 // POST /api/projects/:id/impact-check/remove  { entityName }
 // Backs the impact-check modal's "Remove anyway" button — tries a matching
 // character first, then a matching scene title.
-router.post('/impact-check/remove', asyncHandler(async (req, res) => {
+router.post('/impact-check/remove', requireRole('creator'), asyncHandler(async (req, res) => {
   const projectId = req.params.id;
   const { entityName } = req.body || {};
   if (!entityName) return res.status(400).json({ error: 'entityName is required' });

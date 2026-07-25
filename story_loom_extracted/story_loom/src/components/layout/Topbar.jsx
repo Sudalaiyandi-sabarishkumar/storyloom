@@ -1,5 +1,10 @@
-export default function Topbar({ persona, onPersonaChange }) {
-  const isDirector = persona === 'director';
+function initials(name) {
+  if (!name) return '?';
+  return name.trim().split(/\s+/).slice(0, 2).map((p) => p[0].toUpperCase()).join('');
+}
+
+export default function Topbar({ user, onLogout }) {
+  const isDirector = user.role === 'director';
 
   return (
     <div className="topbar">
@@ -7,16 +12,16 @@ export default function Topbar({ persona, onPersonaChange }) {
         <div className="mark"></div>Storyloom
       </div>
       <div className="persona-switch">
-        <button className={!isDirector ? 'active' : ''} onClick={() => onPersonaChange('creator')}>
-          🎨 Creator Studio
-        </button>
-        <button className={isDirector ? 'active' : ''} onClick={() => onPersonaChange('director')}>
-          🎬 Director Room
+        <button className="active">
+          {isDirector ? '🎬 Director Room' : '🎨 Creator Studio'}
         </button>
       </div>
       <div className="topbar-right">
-        <div style={{ fontSize: '12px' }}>{isDirector ? 'Signed in as Director' : 'Signed in as Creator'}</div>
-        <div className="avatar">SK</div>
+        <div style={{ fontSize: '12px' }}>
+          Signed in as {user.displayName} ({isDirector ? 'Director' : 'Creator'})
+        </div>
+        <button type="button" className="ghost-btn" onClick={onLogout}>Log out</button>
+        <div className="avatar">{initials(user.displayName)}</div>
       </div>
     </div>
   );

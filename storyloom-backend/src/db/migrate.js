@@ -1,8 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import bcrypt from 'bcryptjs';
 import { config } from '../config/index.js';
-import { execute, closeConnection } from './databricksClient.js';
+import { execute, closeConnection, qualifiedTable } from './databricksClient.js';
+import * as userRepo from './repositories/userRepo.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -54,8 +56,50 @@ async function main() {
     console.log('done');
   }
 
+  // schema.sql's `CREATE TABLE IF NOT EXISTS projects` no-ops on a database
+  // that already has a projects table from before role-based access existed
+  // — retrofit the new column explicitly so existing deployments pick it up.
+  process.stdout.write('Ensuring projects.created_by column exists... ');
+  try {
+    await execute(`ALTER TABLE ${qualifiedTable('projects')} ADD COLUMNS (created_by STRING)`);
+    console.log('added');
+  } catch (err) {
+    if (/already exists/i.test(err.message)) {
+      console.log('already present');
+    } else {
+      throw err;
+    }
+  }
+
+  await seedDirector();
+
   console.log('Migration complete.');
   await closeConnection();
+}
+
+/**
+ * Upserts the single Director account from DIRECTOR_* env vars. This is the
+ * only way a director user ever gets created — public signup always creates
+ * role: 'creator'.
+ */
+async function seedDirector() {
+  if (!config.director.password) {
+    console.log('Skipping director seed — DIRECTOR_PASSWORD not set.');
+    return;
+  }
+  const existing = await userRepo.findByUsername(config.director.username);
+  if (existing) {
+    console.log(`Director account "${config.director.username}" already exists — skipping.`);
+    return;
+  }
+  const passwordHash = await bcrypt.hash(config.director.password, 10);
+  await userRepo.createUser({
+    username: config.director.username,
+    passwordHash,
+    role: 'director',
+    displayName: config.director.displayName,
+  });
+  console.log(`Seeded director account "${config.director.username}".`);
 }
 
 main().catch((err) => {

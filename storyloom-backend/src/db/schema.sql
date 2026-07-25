@@ -2,6 +2,15 @@
 -- Run with: npm run db:migrate
 -- Catalog/schema come from DATABRICKS_CATALOG / DATABRICKS_SCHEMA env vars.
 
+CREATE TABLE IF NOT EXISTS users (
+  id               STRING NOT NULL,
+  username         STRING NOT NULL,
+  password_hash    STRING NOT NULL,
+  role             STRING NOT NULL,   -- creator | director
+  display_name     STRING,
+  created_at       TIMESTAMP
+) USING DELTA;
+
 CREATE TABLE IF NOT EXISTS projects (
   id               STRING NOT NULL,
   title            STRING,
@@ -12,6 +21,7 @@ CREATE TABLE IF NOT EXISTS projects (
   timeline         STRING,
   resolution       STRING,
   status           STRING DEFAULT 'draft',   -- draft | in_review | ranked | greenlit
+  created_by       STRING,                   -- users.id of the creator who owns this story
   created_at       TIMESTAMP,
   updated_at       TIMESTAMP
 ) USING DELTA

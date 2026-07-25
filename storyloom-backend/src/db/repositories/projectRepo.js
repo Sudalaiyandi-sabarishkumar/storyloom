@@ -11,11 +11,11 @@ export async function createProject(input) {
   const id = uuid();
   await query(`
     INSERT INTO ${PROJECT_T()}
-      (id, title, genres, themes, background, core_story, timeline, resolution, status, created_at, updated_at)
+      (id, title, genres, themes, background, core_story, timeline, resolution, status, created_by, created_at, updated_at)
     VALUES (
       ${esc(id)}, ${esc(input.title)}, ${escArray(input.genres)}, ${escArray(input.themes)},
       ${esc(input.background)}, ${esc(input.coreStory)}, ${esc(input.timeline)}, ${esc(input.resolution)},
-      'draft', current_timestamp(), current_timestamp()
+      'draft', ${esc(input.createdBy)}, current_timestamp(), current_timestamp()
     )
   `);
 
@@ -94,8 +94,17 @@ export async function getProject(id) {
   return { ...project, characters, conflicts, scenes, openingPlot };
 }
 
-export async function listProjects() {
-  return query(`SELECT id, title, genres, status, created_at FROM ${PROJECT_T()} ORDER BY created_at DESC`);
+/** createdBy: pass a user id to scope to one creator's own stories (Creator
+ * Studio's "My Stories"); omit for Director Room, which sees everyone's. */
+export async function listProjects({ createdBy } = {}) {
+  const where = createdBy ? `WHERE created_by = ${esc(createdBy)}` : '';
+  return query(`SELECT id, title, genres, status, created_at FROM ${PROJECT_T()} ${where} ORDER BY created_at DESC`);
+}
+
+/** Lightweight ownership lookup — avoids the full getProject() joins just to authorize a request. */
+export async function getProjectOwnership(id) {
+  const [row] = await query(`SELECT id, created_by FROM ${PROJECT_T()} WHERE id = ${esc(id)}`);
+  return row || null;
 }
 
 /** Case/whitespace-insensitive delete used by the Review Agent's "Remove anyway" flow. */

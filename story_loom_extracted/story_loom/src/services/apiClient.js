@@ -4,13 +4,39 @@
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 const PROJECT_ID_KEY = 'storyloom:currentProjectId';
+const AUTH_TOKEN_KEY = 'storyloom:authToken';
+
+export function getAuthToken() {
+  return localStorage.getItem(AUTH_TOKEN_KEY);
+}
+
+export function setAuthToken(token) {
+  localStorage.setItem(AUTH_TOKEN_KEY, token);
+}
+
+export function clearAuthToken() {
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+}
 
 async function request(path, options = {}) {
+  const token = getAuthToken();
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
+    },
     ...options,
   });
   if (!res.ok) {
+    // A 401 on a request that carried a token means the session itself is
+    // dead (expired/invalid) — drop back to the login screen. A 401 with no
+    // token (e.g. a failed login attempt) is just a normal error the caller
+    // should handle (wrong password), not a session expiry.
+    if (res.status === 401 && token) {
+      clearAuthToken();
+      window.location.reload();
+    }
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error || `${options.method || 'GET'} ${path} failed (${res.status})`);
   }

@@ -12,12 +12,12 @@
 .chip:hover{border-color:var(--c-amber);color:var(--c-text);}
 .chip.selected{background:linear-gradient(135deg,var(--c-amber),#B5691F);color:#1B1611;border-color:transparent;box-shadow:0 0 16px var(--c-amber-glow);font-weight:600;}
 label.field-label{display:block;font-size:12px;font-weight:600;color:var(--c-text-dim);margin:14px 0 6px;letter-spacing:.3px;text-transform:uppercase;}
-input[type=text],textarea{
+input[type=text],input[type=password],textarea{
   width:100%;background:var(--c-surface2);border:1px solid var(--c-border);border-radius:10px;
   padding:11px 13px;color:var(--c-text);font-family:var(--font-sans);font-size:13.5px;resize:vertical;
   transition:border-color .2s ease, box-shadow .2s ease;
 }
-input[type=text]:focus,textarea:focus{outline:none;border-color:var(--c-amber);box-shadow:0 0 0 3px var(--c-amber-glow);}
+input[type=text]:focus,input[type=password]:focus,textarea:focus{outline:none;border-color:var(--c-amber);box-shadow:0 0 0 3px var(--c-amber-glow);}
 .char-card{background:var(--c-surface2);border:1px solid var(--c-border);border-radius:12px;padding:16px;margin-bottom:12px;}
 .char-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
 .char-name{font-family:var(--font-serif);font-size:16px;font-weight:600;}
