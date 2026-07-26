@@ -1,6 +1,6 @@
 # Storyloom
 
-React + Vite port of the Storyloom prototype — an AI copilot for content creators, with two personas: **Creator Studio** (new project wizard, story editor, knowledge graph, review agent) and **Director Room** (greenlight rankings, script detail + funding decision).
+React + Vite port of the Storyloom application — an AI copilot for content creators, with two personas: **Creator Studio** (new project wizard, story editor, knowledge graph, review agent) and **Director Room** (greenlight rankings, script detail + funding decision).
 
 ## Setup
 
